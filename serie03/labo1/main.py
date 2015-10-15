@@ -5,6 +5,7 @@ import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 import math
+import random
 
 # this import OpenCVUtils
 import os
@@ -21,6 +22,10 @@ try:
 finally:
     sys.path[:] = path  # restore
 
+
+#
+#   BLUR FILTERS
+#
 
 @OpenCVUtils.timeit
 def mean_filter(img, size=3):
@@ -63,6 +68,58 @@ def gaussian_filter_ocv(img, sigma, size=3):
     ker = cv2.getGaussianKernel(ksize=size, sigma=sigma)
     return cv2.filter2D(img, ddepth=cv2.CV_8U, kernel=ker)
 
+
+#
+#   NOISE FILTERS
+#
+
+@OpenCVUtils.timeit
+def gaussian_noise(img):
+    #TODO
+    pass
+
+
+@OpenCVUtils.timeit
+def salt_and_pepper_noise(img, p):
+    '''
+    Apply salt and pepper noise to img
+    with a p probability
+    :param img: img to noise
+    :param p: probability
+    :return: image noised
+    '''
+
+    assert 0.0 <= p <= 1.0
+
+    img_noised = np.copy(img)
+
+    rows, cols = img.shape
+    max_pixels_noised = round(0.5 * rows * cols * p)
+
+    print(max_pixels_noised)
+
+    pixels_noised = list()
+    counter = 0
+
+    def choice_random_pixel():
+        x = random.choice(range(rows))
+        y = random.choice(range(cols))
+        return x, y
+
+    while counter < 2 * max_pixels_noised:
+        x, y = choice_random_pixel()
+        while (x, y) in pixels_noised:
+            x, y = choice_random_pixel()
+
+        # 1/2 pixel is set to black, 1/2 pixel is set to white
+        img_noised[x, y] = counter % 2 * 255
+
+        pixels_noised.append((x, y))
+        counter += 1
+
+    return img_noised
+
+
 if __name__ == '__main__':
 
     # load and display original lena
@@ -80,6 +137,10 @@ if __name__ == '__main__':
     img_lena_gaussian_ocv = gaussian_filter_ocv(img_lena, sigma=0.84089642, size=7)
     cv2.imshow("lena gaussian", img_lena_gaussian)
     cv2.imshow("lena gaussian ocv", img_lena_gaussian_ocv)
+
+    img_lena_salt_and_peppered = salt_and_pepper_noise(img_lena, p=0.02)
+    cv2.imshow("lena salt and pepper", img_lena_salt_and_peppered)
+
 
     cv2.waitKey()
     cv2.destroyAllWindows()
