@@ -69,6 +69,32 @@ def gaussian_filter_ocv(img, sigma, size=3):
     return cv2.filter2D(img, ddepth=cv2.CV_8U, kernel=ker)
 
 
+@OpenCVUtils.timeit
+def min_max_filter(img, size):
+    '''
+    Apply min-max filter using a 3x3 matrix
+    '''
+
+    img_filtered = np.copy(img)
+    rows, cols = img.shape
+
+    def neighbors(x, y):
+        '''
+        warning: limitation: only looking for N8 neighbors
+        '''
+        assert size % 2 == 1
+        half_size = size//2
+        return [img[x2][y2] for x2 in range(x-half_size, x+half_size+1) for y2 in range(y-half_size, y+half_size+1) if (-1 < x < rows and -1 < y < rows and (x != x2 or y != y2) and (0 <= x2 < cols) and (0 <= y2 < cols))]
+
+    for i in range(rows):
+        for j in range(cols):
+            n = neighbors(i, j)
+            min_value = min(n)
+            max_value = max(n)
+            img_filtered[i][j] = max(min_value, min(max_value, img[i][j]))
+
+    return img_filtered
+
 #
 #   NOISE FILTERS
 #
@@ -81,13 +107,13 @@ def gaussian_noise(img):
 
 @OpenCVUtils.timeit
 def salt_and_pepper_noise(img, p):
-    '''
+    """
     Apply salt and pepper noise to img
     with a p probability
     :param img: img to noise
     :param p: probability
     :return: image noised
-    '''
+    """
 
     assert 0.0 <= p <= 1.0
 
@@ -140,6 +166,9 @@ if __name__ == '__main__':
 
     img_lena_salt_and_peppered = salt_and_pepper_noise(img_lena, p=0.02)
     cv2.imshow("lena salt and pepper", img_lena_salt_and_peppered)
+
+    img_lena_salt_and_peppered_filtered = min_max_filter(img_lena_salt_and_peppered, size=5)
+    cv2.imshow("lena salt and pepper filtered", img_lena_salt_and_peppered_filtered)
 
 
     cv2.waitKey()
